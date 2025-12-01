@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<title>地震情報｜tenki.jp 完全再現 2025.11.30 過去20時間対応版</title>
+<title>強震モニタtestversion</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
@@ -10,57 +10,31 @@
   #map{width:100vw;height:100vh;position:fixed;top:0;left:0;}
   .leaflet-tile-pane{filter:brightness(0.38) contrast(1.35);}
   .leaflet-container{background:#000!important;}
-  .eeew-status{
-    position:absolute;top:15px;left:15px;padding:12px 28px;
-    background:#001a00;border:2px solid #00ff00;border-radius:8px;
-    font-size:18px;font-weight:bold;color:#00ff00;z-index:1000;
-  }
-  .scale{
-    position:absolute;top:100px;left:15px;background:rgba(0,0,0,0.8);padding:15px 12px;
-    border-radius:10px;z-index:10;font-size:14px;line-height:2.1;
-  }
+  .eeew-status{position:absolute;top:15px;left:15px;padding:12px 28px;background:#001a00;border:2px solid #00ff00;border-radius:8px;font-size:18px;font-weight:bold;color:#00ff00;z-index:1000;}
+  .scale{position:absolute;top:100px;left:15px;background:rgba(0,0,0,0.8);padding:15px 12px;border-radius:10px;z-index:10;font-size:14px;line-height:2.1;}
   .scale div{display:flex;align-items:center;gap:10px;}
   .scale span{width:24px;height:24px;display:inline-block;border-radius:4px;}
-  .latest-box{
-    position:absolute;top:15px;right:15px;width:400px;background:#111;
-    border:1px solid #000;border-radius:10px;overflow:hidden;z-index:10;
-    max-height:calc(100vh - 30px);display:flex;flex-direction:column;
-  }
-  .latest-title{
-    background:linear-gradient(to bottom,#0068b7,#0044a0);
-    color:#fff;padding:10px 15px;font-size:16px;font-weight:bold;text-align:center;flex-shrink:0;
-  }
-  .latest-main{
-    background:#000;padding:25px 20px;text-align:center;flex-shrink:0;
-  }
-  .max-int{font-size:82px;font-weight:bold;line-height:1;}
-  .int-label{font-size:20px;color:#fff;margin-top:5px;}
-  .place-name{font-size:23px;color:#fff;margin-top:12px;line-height:1.3;}
+  .latest-box{position:absolute;top:15px;right:15px;width:400px;background:#111;border:1px solid #000;border-radius:10px;overflow:hidden;z-index:10;max-height:calc(100vh-30px);display:flex;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,0.8);}
+  .latest-title{background:linear-gradient(to bottom,#0068b7,#0044a0);color:#fff;padding:12px 15px;font-size:16px;font-weight:bold;text-align:center;flex-shrink:0;}
+  .latest-main{background:#000;padding:28px 20px;text-align:center;flex-shrink:0;}
+  .max-int{font-size:86px;font-weight:bold;line-height:1;}
+  .int-label{font-size:21px;color:#fff;margin-top:6px;}
+  .place-name{font-size:24px;color:#fff;margin-top:14px;line-height:1.3;}
   .detail{font-size:18px;color:#ccc;margin-top:10px;}
-  .history-list{
-    flex:1;overflow-y:auto;background:#0a0a0a;padding:8px 0;
-    border-top:1px solid #222;
-  }
-  .history-item{
-    padding:12px 18px;border-bottom:1px solid #222;cursor:pointer;transition:0.2s;
-  }
+  .history-list{flex:1;overflow-y:auto;background:#0b0b0b;padding:6px 0;border-top:1px solid #222;}
+  .history-item{padding:13px 18px;border-bottom:1px solid #222;cursor:pointer;transition:.2s;}
   .history-item:hover{background:#1a1a1a;}
-  .history-item.active{background:#003366;color:#fff;}
+  .history-item.active{background:#003366;color:#fff;font-weight:bold;}
   .hist-time{color:#aaa;font-size:13px;}
-  .hist-int{font-size:20px;font-weight:bold;margin:4px 0;}
+  .hist-int{font-size:21px;font-weight:bold;margin:5px 0;}
   .hist-place{font-size:15px;color:#ddd;}
   .hist-mag{font-size:13px;color:#888;margin-top:4px;}
   .clock{position:absolute;bottom:15px;right:20px;color:#888;font-size:14px;z-index:10;}
-  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.5;}}
 </style>
 </head>
 <body>
 <div id="map"></div>
-
-<div class="eeew-status" id="eeew-status">
-  緊急地震速報は発表されていません
-</div>
-
+<div class="eeew-status">Wolfx Open API 稼働中</div>
 <div class="scale">
   <div><span style="background:#8b0000"></span>震度7</div>
   <div><span style="background:#ff0000"></span>震度6強</div>
@@ -74,7 +48,7 @@
 </div>
 
 <div class="latest-box">
-  <div class="latest-title">最新地震情報</div>
+  <div class="latest-title">最新地震情報（Wolfx）</div>
   <div class="latest-main" id="latest-main">読み込み中…</div>
   <div class="history-list" id="history-list"></div>
 </div>
@@ -84,138 +58,143 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const map = L.map('map',{zoomControl:false,attributionControl:false,minZoom:4.8,maxZoom:10}).setView([36.5,138],5.2);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:''}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 map.setMaxBounds([[24,122],[46,154]]);
 
-setInterval(()=>document.getElementById('clock').textContent=new Date().toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}),500);
+let earthquakes = [], markers = [];
 
-function scaleToText(s){
-  if(!s && s!==0) return "−";
-  const n = Math.round(s/10);
-  return n===7?"7":n===6?"6強":n===5?"6弱":n===4?"5強":n===3?"5弱":n===2?"4":n===1?"3":n===0?"1":"−";
-}
+setInterval(()=>document.getElementById('clock').textContent=new Date().toLocaleString('ja-JP').slice(0,19),1000);
 
 function formatTime(ts){
-  const d = new Date(ts);
-  if(isNaN(d)) return '不明';
-  const now = new Date();
-  const diff = now - d;
-  if(diff < 3600000) return Math.floor(diff/60000) + '分前';
-  if(diff < 86400000) return Math.floor(diff/3600000) + '時間前';
-  return d.toLocaleString('ja-JP').slice(5,16).replace('/', '月').replace(' ', '日 ');
-}
-
-const PROXIES = [
-  'https://api.allorigins.win/raw?url=',
-  'https://corsproxy.io/?',
-  'https://thingproxy.freeboard.io/fetch/'
-];
-
-async function fetchJSON(url){
-  for(let p of PROXIES){
-    try{
-      const r = await fetch(p + encodeURIComponent(url),{cache:"no-store"});
-      if(r.ok) return await r.json();
-    }catch(e){}
+  // Wolfxのtime形式対応: "2025/11/30 20:25" → ISO形式に変換
+  const match = ts.match(/(\d{4})\/(\d{2})\/(\d{2})\s+(\d{2}):(\d{2})/);
+  if(match){
+    const iso = `${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:00`;
+    const d = new Date(iso);
+    return d.toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).replace(/\//g,'/');
   }
-  throw new Error("全プロキシ失敗");
+  return ts; // フォールバック
 }
 
-let recentEarthquakes = [];
+function scaleToText(shindo){
+  if(shindo === '不明' || !shindo) return "−";
+  // Wolfx APIのshindo形式: 数字のみ ("1","2","3","4") を直接使用
+  // 弱/強はAPIデータにないため、数字をそのまま表示 (例: "3" → "3")
+  const num = parseInt(shindo);
+  if(isNaN(num)) return "−";
+  return num.toString();
+}
 
-async function loadHistory(){
+function getColor(intensity){
+  // 数字のみのintensityに対応 (1-7)
+  const num = parseInt(intensity);
+  if(isNaN(num)) return "#ccc";
+  const map = {7:"#8b0000",6:"#ff0000",5:"#ff4500",4:"#ffd700",3:"#ffff00",2:"#ffff00",1:"#00ff00"};
+  return map[num] || "#00ff00";
+}
+
+// Wolfx Open API のみ使用 (jma_eqlist.json)
+async function loadData(){
   try{
-    const data = await fetchJSON('https://api.p2pquake.net/v2/history?codes=551&limit=100');
-    const cutoff = Date.now() - 20*60*60*1000;
-    recentEarthquakes = data
-      .filter(d => d.earthquake && new Date(d.earthquake.time).getTime() >= cutoff)
-      .sort((a,b) => new Date(b.earthquake.time) - new Date(a.earthquake.time));
-    renderAll();
+    const res = await fetch('https://api.wolfx.jp/jma_eqlist.json');
+    const data = await res.json();
+
+    // No1 ~ No50 を抽出、shindoが"不明"でないものだけ（震度1以上相当）
+    earthquakes = [];
+    for(let i=1; i<=50; i++){
+      const key = `No${i}`;
+      const eq = data[key];
+      if(eq && eq.shindo !== '不明' && eq.shindo !== undefined){
+        const intensity = scaleToText(eq.shindo);
+        if(intensity !== "−"){
+          earthquakes.push({
+            intensity,
+            area: eq.location || "調査中",
+            time: eq.time || eq.time_full || new Date().toISOString(),
+            magnitude: eq.magnitude ? parseFloat(eq.magnitude) : null,
+            depth: eq.depth ? eq.depth.replace('km', '') : "調査中",
+            lat: parseFloat(eq.latitude),
+            lng: parseFloat(eq.longitude)
+          });
+        }
+      }
+    }
+
+    earthquakes.sort((a,b) => new Date(b.time) - new Date(a.time));
+
+    render();
+    updateMarkers();
+    console.log('Wolfx API 取得成功：' + earthquakes.length + '件');
   }catch(e){
-    document.getElementById('latest-main').innerHTML = '<div style="color:#fcc;padding:30px 0;font-size:16px;">通信エラー<br>再読み込み中…</div>';
+    console.error('Wolfx API失敗', e);
+    document.getElementById('latest-main').innerHTML = '<div style="color:#aaa;padding:60px 0;">データ取得失敗<br>Wolfx APIが応答しません</div>';
   }
 }
 
-function renderAll(){
-  if(recentEarthquakes.length === 0){
-    document.getElementById('latest-main').innerHTML = '<div style="color:#aaa;padding:50px 0;font-size:18px;">過去20時間に震度1以上の地震はありません</div>';
+function updateMarkers(){
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+  earthquakes.slice(0,30).forEach(eq => {
+    if(eq.lat && eq.lng && !isNaN(eq.lat) && !isNaN(eq.lng)){
+      const num = parseInt(eq.intensity) || 1;
+      const marker = L.circleMarker([eq.lat, eq.lng], {
+        radius: 8 + num,
+        color: getColor(eq.intensity),
+        weight: 3,
+        fillOpacity: 0.8
+      }).addTo(map)
+      .bindPopup(`${eq.area}<br>震度${eq.intensity}<br>${formatTime(eq.time)}`);
+      markers.push(marker);
+    }
+  });
+}
+
+function render(){
+  if(earthquakes.length === 0){
+    document.getElementById('latest-main').innerHTML = '<div style="color:#aaa;padding:60px 0;font-size:19px;">現在、震度1以上の地震はありません</div>';
     document.getElementById('history-list').innerHTML = '';
     return;
   }
 
-  const latest = recentEarthquakes[0].earthquake;
-  const maxInt = latest.maxScale || 0;
-  const color = {70:"#8b0000",60:"#ff0000",55:"#ff0000",50:"#ff4500",45:"#ff4500",40:"#ffd700",30:"#ffff00",20:"#ffff00",10:"#00ff00",0:"#ccc"}[Math.floor(maxInt/10)*10]||"#ccc";
-
+  const e = earthquakes[0];
   document.getElementById('latest-main').innerHTML = `
-    <div class="max-int" style="color:${color}">${scaleToText(maxInt)}</div>
+    <div class="max-int" style="color:${getColor(e.intensity)}">${e.intensity}</div>
     <div class="int-label">最大震度</div>
-    <div class="place-name">${latest.hypocenter?.name || "調査中"}</div>
-    <div class="detail">${formatTime(latest.time)} 発生</div>
-    <div class="detail" style="margin-top:18px;font-size:16px;color:#aaa;">
-      M${latest.magnitude?.toFixed(1)||"-.-"}　深さ${latest.depth?latest.depth+"km":"調査中"}
+    <div class="place-name">${e.area}</div>
+    <div class="detail">${formatTime(e.time)} 発生</div>
+    <div class="detail" style="margin-top:20px;font-size:17px;color:#aaa;">
+      M${e.magnitude ? e.magnitude.toFixed(1) : "-.-"}　深さ${e.depth}
     </div>
   `;
 
-  // 過去地震リスト
-  const listHTML = recentEarthquakes.map((item,i) => {
-    const eq = item.earthquake;
-    const isLatest = i===0;
-    return `
-      <div class="history-item ${isLatest?'active':''}" onclick="selectEarthquake(${i})">
-        <div class="hist-time">${formatTime(eq.time)}</div>
-        <div class="hist-int" style="color:${colorTable(eq.maxScale)}">${scaleToText(eq.maxScale)}</div>
-        <div class="hist-place">${eq.hypocenter?.name || "調査中"}</div>
-        <div class="hist-mag">M${eq.magnitude?.toFixed(1)||"-.-"}　${eq.depth?eq.depth+"km":"-"}</div>
-      </div>
-    `;
-  }).join('');
-
-  document.getElementById('history-list').innerHTML = listHTML;
+  document.getElementById('history-list').innerHTML = earthquakes.slice(0,30).map((eq,i) => `
+    <div class="history-item ${i===0?'active':''}" onclick="selectEq(${i})">
+      <div class="hist-time">${formatTime(eq.time)}</div>
+      <div class="hist-int" style="color:${getColor(eq.intensity)}">${eq.intensity}</div>
+      <div class="hist-place">${eq.area}</div>
+      <div class="hist-mag">M${eq.magnitude ? eq.magnitude.toFixed(1) : "-.-"}　${eq.depth}</div>
+    </div>
+  `).join('');
 }
 
-function colorTable(scale){
-  const t = {70:"#8b0000",60:"#ff0000",55:"#ff0000",50:"#ff4500",45:"#ff4500",40:"#ffd700",30:"#ffff00",20:"#ffff00",10:"#00ff00"}[Math.floor((scale||0)/10)*10];
-  return t||"#aaa";
-}
-
-function selectEarthquake(index){
-  const item = recentEarthquakes[index].earthquake;
-  const maxInt = item.maxScale || 0;
-  const color = colorTable(maxInt);
+function selectEq(i){
+  const e = earthquakes[i];
   document.getElementById('latest-main').innerHTML = `
-    <div class="max-int" style="color:${color}">${scaleToText(maxInt)}</div>
+    <div class="max-int" style="color:${getColor(e.intensity)}">${e.intensity}</div>
     <div class="int-label">最大震度</div>
-    <div class="place-name">${item.hypocenter?.name || "調査中"}</div>
-    <div class="detail">${formatTime(item.time)} 発生</div>
-    <div class="detail" style="margin-top:18px;font-size:16px;color:#aaa;">
-      M${item.magnitude?.toFixed(1)||"-.-"}　深さ${item.depth?item.depth+"km":"調査中"}
+    <div class="place-name">${e.area}</div>
+    <div class="detail">${formatTime(e.time)} 発生</div>
+    <div class="detail" style="margin-top:20px;font-size:17px;color:#aaa;">
+      M${e.magnitude ? e.magnitude.toFixed(1) : "-.-"}　深さ${e.depth}
     </div>
   `;
-  document.querySelectorAll('.history-item').forEach((el,j)=>el.classList.toggle('active', j===index));
+  if(e.lat && e.lng) map.flyTo([e.lat, e.lng], 8);
+  document.querySelectorAll('.history-item').forEach((el,j)=>el.classList.toggle('active',j===i));
 }
 
-// 初期読み込み
-loadHistory();
-setInterval(loadHistory, 30000);
-
-// WebSocketリアルタイム
-const ws = new WebSocket('wss://api.p2pquake.net/v2/ws');
-ws.onmessage = e => {
-  const d = JSON.parse(e.data);
-  if(d.test) return;
-
-  if(d.code === 554 || (d.issue?.type==="EarthquakeEarlyWarning" && !d.canceled)){
-    const s = document.getElementById('eeew-status');
-    s.textContent = "緊急地震速報（警報）";
-    s.style.cssText = "background:#330000!important;border:3px solid #ff0000!important;color:#ff0000!important;animation:blink 0.7s infinite;box-shadow:0 0 30px #f00;";
-    new Audio('https://www.nhk.or.jp/radio/player/alert.mp3').play().catch(()=>{});
-  }
-
-  if(d.code === 551 && d.earthquake){
-    loadHistory(); // 最新リストごと更新
-  }
-};
+// 8秒ごとに更新
+setInterval(loadData, 8000);
+loadData(); // 初回読み込み
 </script>
 </body>
 </html>
